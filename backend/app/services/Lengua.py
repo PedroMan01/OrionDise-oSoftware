@@ -6,8 +6,8 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 
-load_dotenv()
-api_key = os.getenv("API_OPENAI")
+load_dotenv("backend/.env")
+api_key = os.getenv("OPENAI_API_KEY")
 openai = AsyncOpenAI(api_key=api_key)
 
 AUDIO_PATH = Path(__file__).parent.parent / "audio"

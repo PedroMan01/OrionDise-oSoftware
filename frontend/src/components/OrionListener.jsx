@@ -398,7 +398,7 @@ const OrionListener = () => {
           onClick={toggleEscucha}
           className="mb-6 px-6 py-3 rounded-full text-xl font-bold shadow-xl bg-green-500 hover:bg-green-600 transition"
         >
-          Escuchar
+          ▶
         </button>
       )}
       <canvas

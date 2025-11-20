@@ -1,20 +1,22 @@
 from fastapi import APIRouter, Request
-from app.services.central import IA
+from pydantic import BaseModel
+from .services.central import IA
 import os
 
 
 router = APIRouter()
 
-
+class OrionMessage(BaseModel):
+    mensaje: str
 
 @router.post("/activar")
-async def activar_orion(request: Request):
-    data = await request.json()
-    mensaje = data.get("mensaje", "")
+async def activar_orion(data: OrionMessage): # <--- 3. USAR EL ESQUEMA AQUÍ
+    # Ya no necesitamos 'await request.json()'
+    # FastAPI valida y convierte los datos automáticamente
+    mensaje = data.mensaje
 
     print(f"🛰️ Texto recibido: {mensaje}")
 
-    # Añade print antes de llamar a IA
     print("Llamando a IA...")
     Respuesta_IA = await IA(texto=mensaje)
     print("Respuesta IA recibida")

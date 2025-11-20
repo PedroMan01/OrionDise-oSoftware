@@ -10,7 +10,7 @@ import ProtectedRoute from "./components/ProtectedRoute"; // NUEVO: Importamos e
 
 // NUEVO: Importar los archivos de idioma y la función de traducción
 import es from './i18n/es.json';
-import en from './i18n/en.json'; // Asumiendo el segundo idioma es inglés
+import en from './i18n/en.json';
 
 // Función de traducción simple dentro de App.jsx (para simplicidad)
 const translations = { es, en };

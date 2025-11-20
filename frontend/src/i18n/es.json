@@ -17,5 +17,8 @@
     "success": "Usuario creado con éxito. Ahora puedes iniciar sesión.",
     "loginLink": "¿Ya tienes cuenta? Inicia Sesión",
     "submitButton": "Registrarse"
+  },
+  "OrionListener": {
+    "button": "Escuchar"
   }
 }
