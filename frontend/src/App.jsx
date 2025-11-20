@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Routes, Route } from "react-router-dom";
+import RegisterForm from "./components/RegisterForm";
 // Componentes del proyecto anterior (mantenemos solo OrionListener)
 import OrionListener from "./components/OrionListener";
 
@@ -36,32 +37,24 @@ function App() {
     const t = (key) => translate(language, key);
 
     return (
-        <>
-            <Routes>
-                {/* 1. Ruta de Login (Pública) */}
-                <Route 
-                    path="/" 
-                    element={
-                        <Login 
-                            t={t}
-                            language={language}
-                            setLanguage={setLanguage}
-                        />
-                    } 
-                />
+        <Routes>
+            <Route 
+                path="/" 
+                element={<Login t={t} language={language} setLanguage={setLanguage} />} 
+            />
+            
+            {/* --- NUEVA RUTA PARA EL REGISTRO --- */}
+            <Route path="/register" element={<RegisterForm t={t} />} />
 
-                {/* 2. Ruta Protegida: Solo accesible con Token */}
-                <Route 
-                    path="/home" 
-                    element={
-                        <ProtectedRoute>
-                            {/* Este componente solo se renderiza si hay un token válido */}
-                            <OrionListener />
-                        </ProtectedRoute>
-                    } 
-                />
-            </Routes>
-        </>
+            <Route 
+                path="/home" 
+                element={
+                    <ProtectedRoute>
+                        <OrionListener />
+                    </ProtectedRoute>
+                } 
+            />
+        </Routes>
     );
 }
 

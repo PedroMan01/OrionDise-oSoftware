@@ -6,6 +6,16 @@
     "passwordLabel": "Password",
     "passwordPlaceholder": "Enter your password",
     "submitButton": "Sign In",
-    "errorGeneric": "Login failed. Please try again."
+    
+    "noAccount": "Don't have an account?",
+    "createAccount": "Create New User",
+    "errorGeneric": "Incorrect credentials or invalid data.",
+    "errorConnection": "Error connecting to the server."
+  },
+  "register": {
+    "title": "Create New Account",
+    "success": "User successfully created. You can now log in.",
+    "loginLink": "Already have an account? Log In",
+    "submitButton": "Register"
   }
 }

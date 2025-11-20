@@ -3,6 +3,7 @@
 import React from 'react';
 import LoginForm from './LoginForm'; // Componente del formulario (Paso 2 anterior)
 import LanguageSwitcher from './LanguageSwitcher'; // Componente selector (Paso siguiente)
+import '../styles/Login.css';
 
 function Login({ t, language, setLanguage }) {
     return (

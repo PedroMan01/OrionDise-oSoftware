@@ -52,7 +52,7 @@
 /* 💻 Tablet (601px a 1024px) */
 @media (min-width: 601px) and (max-width: 1024px) {
     .login-page-container {
-        width: 100%;
+        width: 400px;
         max-width: 450px; /* Limita el ancho para que no sea muy grande */
         padding: 30px;
     }
@@ -61,7 +61,7 @@
 /* 🖥️ Desktop (1025px en adelante) */
 @media (min-width: 1025px) {
     .login-page-container {
-        width: 100%;
+        width: 1000px;
         max-width: 380px;
         padding: 40px;
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); /* Sombra más pronunciada */

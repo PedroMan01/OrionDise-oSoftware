@@ -6,6 +6,16 @@
     "passwordLabel": "Contraseña",
     "passwordPlaceholder": "Ingresa tu contraseña",
     "submitButton": "Entrar",
-    "errorGeneric": "Error al iniciar sesión. Por favor, inténtalo de nuevo."
+    
+    "noAccount": "¿No tienes cuenta?",
+    "createAccount": "Crear Nuevo Usuario",
+    "errorGeneric": "Credenciales incorrectas o datos inválidos.",
+    "errorConnection": "Error al conectar con el servidor."
+  },
+  "register": {
+    "title": "Crear Nueva Cuenta",
+    "success": "Usuario creado con éxito. Ahora puedes iniciar sesión.",
+    "loginLink": "¿Ya tienes cuenta? Inicia Sesión",
+    "submitButton": "Registrarse"
   }
 }
