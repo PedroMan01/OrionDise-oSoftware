@@ -1,0 +1,28 @@
+/* Estilos Globales Básicos */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #888888;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Asegura que ocupe toda la altura de la vista */
+}
+
+/* Contenedor principal de la página de Login */
+.login-page-container {
+    padding: 20px;
+    background: rgb(236, 236, 236);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+
+}
+
+/* Nota al pie */
+.footer-note {
+    text-align: center;
+    margin-top: 20px;
+    color: #666;
+    font-size: 0.8em;
+}

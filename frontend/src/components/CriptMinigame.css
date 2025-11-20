@@ -1,0 +1,29 @@
+/* CriptMinigame.css */
+body {
+  width: 100%;
+  display: flex;
+}
+.terminal {
+  background-color: #000;
+  color: #00ff00;
+  font-family: "Courier New", Courier, monospace;
+  padding: 20px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  width: 100%;
+  display: flex;
+}
+
+.word {
+  cursor: pointer;
+  color: #00ff00;
+}
+
+.word:hover {
+  background-color: #005500;
+}
+
+.word.selected {
+  background-color: #00ff00;
+  color: black;
+}

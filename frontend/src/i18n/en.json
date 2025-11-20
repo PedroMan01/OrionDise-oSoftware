@@ -1,0 +1,11 @@
+{
+  "login": {
+    "title": "Log In",
+    "emailLabel": "Email Address",
+    "emailPlaceholder": "example@uai.cl",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "submitButton": "Sign In",
+    "errorGeneric": "Login failed. Please try again."
+  }
+}

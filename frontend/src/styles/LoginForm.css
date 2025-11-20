@@ -1,0 +1,69 @@
+/* --- ESTILOS BASE (Móvil - hasta 600px) --- */
+
+.login-form {
+    width: 100%;
+    padding: 10px;
+}
+
+.login-form h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 25px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
+.responsive-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 1em;
+}
+
+.login-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #007bff; /* Color primario */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: background-color 0.3s;
+}
+
+.login-button:hover {
+    background-color: #0056b3;
+}
+
+/* --- MEDIA QUERIES --- */
+
+/* 💻 Tablet (601px a 1024px) */
+@media (min-width: 601px) and (max-width: 1024px) {
+    .login-page-container {
+        width: 100%;
+        max-width: 450px; /* Limita el ancho para que no sea muy grande */
+        padding: 30px;
+    }
+}
+
+/* 🖥️ Desktop (1025px en adelante) */
+@media (min-width: 1025px) {
+    .login-page-container {
+        width: 100%;
+        max-width: 380px;
+        padding: 40px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); /* Sombra más pronunciada */
+    }
+}

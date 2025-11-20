@@ -1,0 +1,11 @@
+{
+  "login": {
+    "title": "Iniciar Sesión",
+    "emailLabel": "Correo Electrónico",
+    "emailPlaceholder": "ejemplo@uai.cl",
+    "passwordLabel": "Contraseña",
+    "passwordPlaceholder": "Ingresa tu contraseña",
+    "submitButton": "Entrar",
+    "errorGeneric": "Error al iniciar sesión. Por favor, inténtalo de nuevo."
+  }
+}
