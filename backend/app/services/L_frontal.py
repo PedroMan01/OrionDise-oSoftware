@@ -7,7 +7,7 @@ from .claves import clave
 
 MEMORIA_PATH = Path(__file__).parent.parent / "memory"
 
-
+"""
 def registrotripulación():
     with open(f"{MEMORIA_PATH}/registro.txt", "r", encoding="utf-8") as archivo:
         registro = archivo.read().split("//")[0]
@@ -104,6 +104,7 @@ def ReinicioNucleo():
     with open(f"{MEMORIA_PATH}/registro.txt", "w", encoding="utf-8") as archivo:
         archivo.writelines(nuevas_lineas)
     return 0
+"""
 
 role ="""**Nombre:** ORIÓN (Optimización de Rutas con IA para Operaciones de Navegación)
 
@@ -293,39 +294,43 @@ class LLM:
                     arguments = json.loads(tool.get("function", {}).get("arguments", "{}"))
                     print(arguments)
                     if tool_name == "registroTripulacion":
-                        registro = registrotripulación()
-                        resumen += f"\n{registro}"
-
+                        #registro = registrotripulación()
+                        #resumen += f"\n{registro}"
+                        pass
                     elif tool_name == "estadoSistemas":
-                        registro = estadoSistemas()
-                        resumen += f"\n{registro}"
+                        #registro = estadoSistemas()
+                        #resumen += f"\n{registro}"
+                        pass
 
                     elif tool_name == "AccesoNavegacion":
-                        Valor = AccesoNavegacion()
-                        print(f"\nSistem: {Valor}")
-                        resumen += f"\nSistem: {Valor}"
+                        #Valor = AccesoNavegacion()
+                        #print(f"\nSistem: {Valor}")
+                        #resumen += f"\nSistem: {Valor}"
+                        pass
                     
                     elif tool_name == "EstavilidadEnergetica":
-                        Valor = EstavilidadEnergetica()
-                        resumen += f"\nSistem: {Valor}"
-                        
+                        #Valor = EstavilidadEnergetica()
+                        #resumen += f"\nSistem: {Valor}"
+                        pass
                     elif tool_name == "SiguientePaso":
-                        Valor = SiguientePaso()
-                        resumen += f"\nEsta información es muy relevante. En la medida de lo posible debes comunicar lo siguiente sin información extra, sin un plan de acción ni una descripción detallada de la situación, solo la siguiente información: {Valor}"
-
+                        #Valor = SiguientePaso()
+                        #resumen += f"\nEsta información es muy relevante. En la medida de lo posible debes comunicar lo siguiente sin información extra, sin un plan de acción ni una descripción detallada de la situación, solo la siguiente información: {Valor}"
+                        pass
                     elif tool_name == "IngresarContrasena":
-                        contraseña = arguments.get("contraseña")
-                        Valor = clave(contraseña)
-                        resumen += f"\n{Valor}"
-
+                        #contraseña = arguments.get("contraseña")
+                        #Valor = clave(contraseña)
+                        #resumen += f"\n{Valor}"
+                        pass
                     elif tool_name == "ReinicioNucleo":
-                        Valor = EstavilidadEnergetica()
+                        #Valor = EstavilidadEnergetica()
+                        """
                         if Valor == "Es posible reinicir el sistema. Se recomienda proseder cuanto antes":
                             resumen += f"\nSistem: Se está reiniciando el sistema. Espera unos segundos"
                             thread = threading.Thread(target=Escena, args=("Reinicio", "light.strip_lights", 255, [255, 255, 255]))
                             thread.start()
                             ReinicioNucleo()
-
+                        """
+                        pass
                     elif tool_name == "iluminacionambiente":
                         estado = arguments.get("estado")
                         nombre_entidad = "light.strip_lights"

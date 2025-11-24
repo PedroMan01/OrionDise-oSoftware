@@ -23,11 +23,17 @@ const OrionListener = () => {
   const keepAliveRef = useRef(null);
 
   /* ------------------ utilidades de dibujo ------------------ */
+  const getNumPuntos = () => {
+    if (window.innerWidth < 700) return 3;
+    if (window.innerWidth < 1000) return 5;
+    return 7;
+  };
+
   const iniciarOlaCargando = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    const numPuntos = 7;
+    const numPuntos = getNumPuntos();
     const espacio = canvas.width / (numPuntos + 1);
     const centroY = canvas.height / 2;
     let frame = 0;
@@ -238,7 +244,7 @@ const OrionListener = () => {
 
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
-    const numPuntos = 7;
+    const numPuntos = getNumPuntos();
     const espacio = canvas ? canvas.width / (numPuntos + 1) : 0;
     const centroY = canvas ? canvas.height / 2 : 0;
 
@@ -317,7 +323,7 @@ const OrionListener = () => {
 
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
-    const numPuntos = 7;
+    const numPuntos = getNumPuntos();
     const espacio = canvas ? canvas.width / (numPuntos + 1) : 0;
     const centroY = canvas ? canvas.height / 2 : 0;
 
