@@ -17,6 +17,7 @@ const OrionListener = () => {
   // estado operativo
   const isRecognizingRef = useRef(false);
   const escucha = useRef(true);
+  const procesandoRef = useRef(false); // Prevenir duplicados
 
   // control timeouts / intervals
   const startRetryRef = useRef(null);
@@ -111,12 +112,16 @@ const OrionListener = () => {
           const fraseFinal = result[0].transcript.trim().toLowerCase();
           if (
             (fraseFinal.includes("orion") || fraseFinal.includes("orión")) &&
-            escucha.current
+            escucha.current &&
+            !procesandoRef.current
           ) {
+            procesandoRef.current = true;
             escucha.current = false;
             setUltimoTexto(fraseFinal);
             detenerEscucha();
             iniciarOlaCargando();
+
+            console.log("📤 Enviando mensaje al backend:", fraseFinal);
 
             fetch("http://localhost:8000/activar", {
               method: "POST",
@@ -125,10 +130,12 @@ const OrionListener = () => {
             })
               .then((res) => res.json())
               .then((data) => {
+                console.log("📥 Respuesta recibida del backend:", data);
                 if (data.audio_url) {
                   reproducirRespuesta(`${data.audio_url}?t=${Date.now()}`);
                 } else {
                   setTimeout(() => {
+                    procesandoRef.current = false;
                     escucha.current = true;
                     iniciarEscucha();
                   }, 350);
@@ -136,9 +143,13 @@ const OrionListener = () => {
               })
               .catch((err) => {
                 console.error("Error fetch activar:", err);
+                procesandoRef.current = false;
                 escucha.current = true;
                 setTimeout(() => iniciarEscucha(), 350);
               });
+            
+            // IMPORTANTE: Salir del bucle para no procesar múltiples resultados
+            break;
           }
         }
       }
@@ -298,6 +309,7 @@ const OrionListener = () => {
     });
 
     setTimeout(() => {
+      procesandoRef.current = false;
       escucha.current = true;
       iniciarEscucha();
     }, 400);

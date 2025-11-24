@@ -403,8 +403,6 @@ class LLM:
                 return respuesta
 
             else:
-
-                Contexto.append({"role": "user", "content": text})
                 if resumen != "":
                     Contexto.append({"role": "user", "content": f"Información relevante debes basar tu respuesta en la siguiente información: {resumen}"})
 

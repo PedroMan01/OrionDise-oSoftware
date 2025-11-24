@@ -15,13 +15,13 @@ async def activar_orion(data: OrionMessage): # <--- 3. USAR EL ESQUEMA AQUÍ
     # FastAPI valida y convierte los datos automáticamente
     mensaje = data.mensaje
 
-    print(f"🛰️ Texto recibido: {mensaje}")
+    print(f"🛰️ ENTRADA A /activar - Texto recibido: {mensaje}")
 
     print("Llamando a IA...")
     Respuesta_IA = await IA(texto=mensaje)
     print("Respuesta IA recibida")
 
-    print(f"🛰️ Respuesta: {Respuesta_IA}")
+    print(f"🛰️ SALIDA /activar - Respuesta: {Respuesta_IA}")
 
     return {
         "text": Respuesta_IA["text"],
