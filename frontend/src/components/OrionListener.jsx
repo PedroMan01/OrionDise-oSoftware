@@ -304,7 +304,7 @@ const OrionListener = () => {
       // timeout basado en duración
       safetyTimeout = setTimeout(
         cleanup,
-        (isNaN(audio.duration) ? 60 : audio.duration + 5) * 1000
+        (isNaN(audio.duration) ? 600 : audio.duration + 5) * 1000
       );
     });
 

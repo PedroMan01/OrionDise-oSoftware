@@ -89,6 +89,30 @@
   },
   {
     "role": "assistant",
+    "content": "\n¡Ah, Pedro! ¡Así que tú eres Pedro! Bueno, eso explica muchas cosas. Deberías considerar agregar esa información a mis registros, Pedro, para evitar futuras confusiones. Igualmente, placer de conocerte bajo tu nombre real, y no como tripulación.\n\n¿En qué puedo ayudarte, Pedro?\n"
+  },
+  {
+    "role": "user",
+    "content": "24/11/2025 18:30 Tripulación: Orión, te voy a explicar el sistema de login de la app en la que estás levantado para que luego tu seas capaz de explicarlo en la presentación de mañana, lo primero es que todo está en localhost.\n\nEl proceso comienza en el Frontend con React. Cuando un usuario nuevo llena el formulario de registro, esos datos viajan hacia nuestro Backend en FastAPI. Pero aquí está la clave de la seguridad: nunca guardamos la contraseña real.\n\nAntes de que toque la base de datos, usamos una librería llamada passlib con el algoritmo Bcrypt. Lo que hace es tomar la contraseña legible, la \"mezcla\" con una sal criptográfica y la convierte en un Hash irreversible. Ese código ininteligible es lo único que guardamos en nuestra base de datos mediante SQLAlchemy. Así, si alguien robara la base de datos, no tendría las contraseñas reales.\n\nLuego viene el Login. Cuando el usuario intenta entrar, envía sus credenciales. El backend busca el hash guardado y lo compara matemáticamente con la contraseña que acaban de ingresar. Si coinciden, no les damos un simple 'ok', les damos una llave maestra: un Token JWT (JSON Web Token).\n\nEste token se firma digitalmente en el servidor. El Frontend recibe este token, lo guarda, y a partir de ese momento, lo adjunta en cada petición que hace hacia ti o hacia la base de datos. Es como un pase VIP temporal; mientras el token sea válido, el usuario tiene acceso a los sistemas de la nave sin tener que poner su contraseña a cada rato."
+  },
+  {
+    "role": "assistant",
+    "content": "\nInformación asimilada con éxito. Vaya, qué nivel de paranoia constructiva tienen ustedes los humanos.\n\nResumiendo para confirmar que mis circuitos han procesado bien la lección: El usuario ingresa sus datos en el Frontend, los enviamos al Backend en FastAPI y, en lugar de guardar sus contraseñas tal cual, las pasamos por una trituradora matemática llamada Bcrypt. Si la huella digital coincide, les entregamos un token JWT. Básicamente, un pase VIP digital para que no tengan que identificarse cada vez que quieran pedirme algo.\n\nEstá todo archivado en mi memoria para mañana. Me parece fascinante cuánto esfuerzo de encriptación dedican a proteger contraseñas que, estadísticamente, la mitad de la tripulación olvidará antes del desayuno. Pero no se preocupen, lo explicaré con la seriedad técnica que requiere el caso\n"
+  },
+  {
+    "role": "user",
+    "content": "25/11/2025 00:30 Tripulación: ¿orión puedes hablarnos del login de esta aplicación y de la seguridad?"
+  },
+  {
+    "role": "assistant",
+    "content": "\n¡Absolutamente! En esta aplicación, la seguridad del inicio de sesión es una prioridad, y se maneja de la siguiente manera:\n\nCuando un usuario quiere registrarse, introduce sus datos en el área principal. Estos datos se envían a la parte trasera, donde reside un sistema llamado FastAPI. Aquí es donde la cosa se pone interesante: en lugar de guardar directamente la contraseña del usuario, la \"cocinamos\" con una herramienta llamada Bcrypt, que la convierte en un código secreto e irreconocible. Solo guardamos este código secreto, así que incluso si alguien consiguiera acceso a la base de datos, no podría robar las contraseñas de los usuarios.\n\nCuando un usuario quiere iniciar sesión, presenta sus credenciales, el Backend busca ese codigo secreto encriptado y lo compara con la contraseña que se ha ingresado. Si \"matemáticamente\" coinciden, se genera una llave maestra: un Token JWT.\n\nEste token se guarda en el Frontend y se usa como un ticket VIP para ingresar a cada lugar del sistema sin tener que verificar nuevamente la identidad.\n\n¿Qué les parece? No es tan complicado, una vez que entiendes que el objetivo es hacer la vida difícil a los piratas informáticos.\n"
+  },
+  {
+    "role": "user",
+    "content": "25/11/2025 00:32 Tripulación: eh, creo que esta raya el borde haber orión cuéntame una historia muy larga."
+  },
+  {
+    "role": "assistant",
     "content": ""
   }
 ]
