@@ -113,14 +113,19 @@ def get_hybrid_context(db: Session, user_id: int, query_text: str, limit_semanti
             "content": f"{msg.role}: {msg.content}"
         })
 
-    # B. Thoughts
+     # B. Thoughts (User-specific AND Global System Thoughts)
     all_thoughts = db.query(models.Thought)\
-        .filter(models.Thought.user_id == user_id)\
+        .filter(
+            (models.Thought.user_id == user_id) | 
+            (models.Thought.agent_id == 'ORION_CORE')
+        )\
         .filter(models.Thought.vector != None)\
         .all()
         
     for thought in all_thoughts:
         score = vector_service.calculate_similarity(query_vector, thought.vector)
+        # Boost score slightly for system thoughts to ensure they are heard? 
+        # Or treat equally. Let's treat equally but prefix differently maybe?
         scored_items.append({
             "score": score,
             "type": "thought",
@@ -139,7 +144,10 @@ def get_hybrid_context(db: Session, user_id: int, query_text: str, limit_semanti
     # Include the last thought if it's recent (< 24h)
     if (not query_text or len(query_text) < 5 or not top_semantic):
          last_thought = db.query(models.Thought)\
-             .filter(models.Thought.user_id == user_id)\
+             .filter(
+                (models.Thought.user_id == user_id) | 
+                (models.Thought.agent_id == 'ORION_CORE')
+             )\
              .order_by(models.Thought.created_at.desc())\
              .first()
          
@@ -301,3 +309,104 @@ def get_user_profile(db: Session, user_id: int, query_text: str = "") -> str:
         return "" # No profile info
         
     return "\n".join(profile_lines)
+
+# --- REFLECTION BACKLOG OPERATIONS ---
+import difflib
+import logging
+
+logger = logging.getLogger("OrionCRUD")
+logger.setLevel(logging.INFO)
+
+def add_reflection_topic(db: Session, topic: str):
+    """Adds a new topic to the reflection backlog with fuzzy duplicate detection."""
+    
+    # 1. Strict Check
+    strict_existing = db.query(models.ReflectionBacklog).filter(
+        models.ReflectionBacklog.topic == topic, 
+        models.ReflectionBacklog.status == 'pending'
+    ).first()
+    
+    if strict_existing:
+        logger.info(f"Duplicate topic prevented (strict): {topic}")
+        return strict_existing
+
+    # 2. Fuzzy Check (Check against all pending)
+    # Note: If backlog is huge, this is slow. Assuming small backlog (<100).
+    pending_items = db.query(models.ReflectionBacklog).filter(
+        models.ReflectionBacklog.status == 'pending'
+    ).all()
+    
+    for item in pending_items:
+        similarity = difflib.SequenceMatcher(None, item.topic.lower(), topic.lower()).ratio()
+        if similarity > 0.85: # Threshold for "muy similar"
+             logger.info(f"Duplicate topic prevented (fuzzy {similarity:.2f}): '{topic}' similar to '{item.topic}'")
+             return item
+        
+    new_item = models.ReflectionBacklog(topic=topic, status='pending')
+    db.add(new_item)
+    db.commit()
+    db.refresh(new_item)
+    logger.info(f"Topic added to backlog: {topic}")
+    return new_item
+
+def get_pending_reflections(db: Session):
+    """Returns all pending reflection topics."""
+    return db.query(models.ReflectionBacklog)\
+        .filter(models.ReflectionBacklog.status == 'pending')\
+        .order_by(models.ReflectionBacklog.created_at.asc())\
+        .all()
+
+def mark_reflection_completed(db: Session, topic: str, result: str = None):
+    """Marks a reflection topic as completed and logs the result."""
+    
+    items = db.query(models.ReflectionBacklog).filter(
+        models.ReflectionBacklog.topic == topic,
+        models.ReflectionBacklog.status == 'pending'
+    ).all()
+    
+    if items:
+        for item in items:
+            item.status = 'completed'
+            # Note: We don't store the result in backlog table yet, but we log it as requested.
+            # The actual content is in the 'Thought' table.
+        
+        db.commit()
+        logger.info(f"Topic completed: '{topic}'. Result Preview: {result[:50] if result else 'N/A'}...")
+        return True
+    return False
+
+def get_recent_completed_reflections(db: Session, limit: int = 5):
+    """
+    Recupera las últimas 5 reflexiones completadas (Thoughts) de la DB.
+    (Note: The Backlog tracks status, but the CONTENT is in thoughts).
+    So we typically query the Thoughts table for the agent.
+    """
+    return db.query(models.Thought)\
+        .filter(models.Thought.agent_id == 'ORION_CORE')\
+        .order_by(models.Thought.created_at.desc())\
+        .limit(limit)\
+        .all()
+
+def get_formatted_knowledge(db: Session, limit: int = 5) -> str:
+    """
+    Retrieves recent completed reflections and formats them for context injection.
+    Format: "Tema: [X] | Conclusión: [Y]"
+    """
+    thoughts = db.query(models.Thought)\
+        .filter(models.Thought.agent_id == 'ORION_CORE')\
+        .order_by(models.Thought.created_at.desc())\
+        .limit(limit)\
+        .all()
+    
+    if not thoughts:
+        return ""
+        
+    lines = []
+    for t in thoughts:
+        # Clean up content to just be the core conclusion if possible?
+        # For now, just take the first 150 chars or the whole content if short.
+        # The user wants "Conclusión: [Y]". The content IS the conclusion/reflection.
+        summary = t.content[:200] + "..." if len(t.content) > 200 else t.content
+        lines.append(f"Tema: {t.topic} | Conclusión: {summary}")
+        
+    return "\n".join(lines)

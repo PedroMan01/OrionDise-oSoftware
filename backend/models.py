@@ -52,7 +52,8 @@ class UserPreference(Base):
 class Thought(Base):
     __tablename__ = "thoughts"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) # Nullable for system thoughts
+    agent_id = Column(String, default="ORION_CORE", nullable=True) # Unification ID
     topic = Column(String)
     content = Column(Text)
     mood = Column(String)
@@ -60,3 +61,10 @@ class Thought(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     owner = relationship("User", back_populates="thoughts")
+
+class ReflectionBacklog(Base):
+    __tablename__ = "reflection_backlog"
+    id = Column(Integer, primary_key=True, index=True)
+    topic = Column(String)
+    status = Column(String, default="pending") # pending, completed
+    created_at = Column(DateTime, default=datetime.utcnow)

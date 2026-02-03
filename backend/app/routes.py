@@ -48,6 +48,12 @@ async def chat_interaction(data: ChatRequest, db: Session = Depends(get_db)):
     if user_profile:
         llm_history.append({"role": "system", "content": user_profile})
 
+    # 1.5 INVESTIGACIONES RECIENTES
+    recent_research = crud.get_formatted_knowledge(db, limit=5)
+    if recent_research:
+         research_text = f"[INVESTIGACIONES RECIENTES]\n{recent_research}"
+         llm_history.append({"role": "system", "content": research_text})
+
     # 2. Contexto Semántico (Pensamientos y Recuerdos)
     for msg in context_data["semantic"]:
          llm_history.append({"role": msg.role, "content": msg.content})
@@ -61,7 +67,10 @@ async def chat_interaction(data: ChatRequest, db: Session = Depends(get_db)):
     def upsert_callback(content, category):
         crud.upsert_user_preference(db, user_id, content, category)
 
-    llm_output = orion_llm.get_response(user_text, user_id, llm_history, upsert_callback=upsert_callback)
+    def reflection_callback(topic):
+        crud.add_reflection_topic(db, topic)
+
+    llm_output = orion_llm.get_response(user_text, user_id, llm_history, upsert_callback=upsert_callback, reflection_callback=reflection_callback)
     
     # Check if we got a dict (expected) or string (fallback)
     if isinstance(llm_output, dict):
@@ -157,6 +166,12 @@ async def chat_audio_interaction(
     if user_profile:
         llm_history.append({"role": "system", "content": user_profile})
 
+    # 1.5 INVESTIGACIONES RECIENTES
+    recent_research = crud.get_formatted_knowledge(db, limit=5)
+    if recent_research:
+         research_text = f"[INVESTIGACIONES RECIENTES]\n{recent_research}"
+         llm_history.append({"role": "system", "content": research_text})
+
     # 2. Contexto Semántico
     for msg in context_data["semantic"]:
          llm_history.append({"role": msg.role, "content": msg.content})
@@ -170,8 +185,11 @@ async def chat_audio_interaction(
     def upsert_callback(content, category):
         crud.upsert_user_preference(db, user_id, content, category)
 
+    def reflection_callback(topic):
+        crud.add_reflection_topic(db, topic)
+
     # Get LLM Response
-    llm_output = orion_llm.get_response(transcribed_text, user_id, llm_history, upsert_callback=upsert_callback)
+    llm_output = orion_llm.get_response(transcribed_text, user_id, llm_history, upsert_callback=upsert_callback, reflection_callback=reflection_callback)
     
     if isinstance(llm_output, dict):
         response_text = llm_output.get("response", "Error parsing response")

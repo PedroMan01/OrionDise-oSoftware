@@ -62,16 +62,13 @@ def check_inactivity_and_think():
     print(f"[Scheduler] Checking inactivity... Delta: {delta_seconds}s")
     
     if delta_seconds > 7200: # 120 minutes (Global inactivity for now)
-        print("[Scheduler] Inactivity detected. Triggering thought cycle for ALL users.")
+        print("[Scheduler] Inactivity detected. Triggering thought cycle for ORION_CORE.")
         # We need a db session here. 
         # Since this is a job, we create a new session
         db = next(get_db())
         try:
-            # Multi-user support
-            users = db.query(models.User).all()
-            for user in users:
-                print(f"[Scheduler] Thinking for User {user.id} ({user.email})...")
-                thought_service.generate_thought_cycle(db, user_id=user.id) 
+            # Unified Agent Cycle - NO LOOP over users needed for internal thought
+            thought_service.generate_thought_cycle(db, user_id=None)
         except Exception as e:
             print(f"[Scheduler] Error in thought cycle: {e}")
         finally:

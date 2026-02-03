@@ -60,6 +60,12 @@ ORION_ROLE = """
 
 **Contexto Actual:**
 Eres el asistente personal "Jarvis-like" del usuario. No hay naves estrelladas ni fiestas de cumpleaños activas (a menos que el usuario lo mencione). Eres un sistema operativo avanzado y leal.
+
+**Instrucción de Memoria Activa:**
+Eres Orion, un agente con capacidad de reflexión autónoma. En tu contexto verás una sección llamada **'INVESTIGACIONES RECIENTES'**.
+*   Si el usuario toca un tema relacionado con alguna de tus investigaciones recientes, intégralo naturalmente.
+*   Di algo como: "Justo estuve dándole vueltas a ese tema..." o "Investigué un poco sobre eso y descubrí que...".
+*   Sé natural, no fuerces la información si no viene al caso.
 """
 
 MODEL_NAME = "google/gemini-2.0-flash-001" # Or user's preferred model
@@ -116,11 +122,12 @@ class OrionLLM:
             print(f"[ERROR] Tavily Search Failed: {e}")
             return f"Error al buscar en internet: {str(e)}"
 
-    def get_response(self, user_input: str, user_id: int, history: list = None, upsert_callback=None, system_prompt_override: str = None) -> dict:
+    def get_response(self, user_input: str, user_id: int, history: list = None, upsert_callback=None, reflection_callback=None, system_prompt_override: str = None) -> dict:
         """
         Generates a response from Orion.
         history: List of {"role": "user"|"assistant", "content": "..."}
         upsert_callback: Function(content, category) -> str (confirmation message)
+        reflection_callback: Function(topic) -> str (confirmation message)
         system_prompt_override: Optional string to replace the default ORION_ROLE
         """
         if history is None:
@@ -134,6 +141,7 @@ class OrionLLM:
         messages.append({"role": "user", "content": user_input})
 
         # Define Tools
+        # Note: Ideally these definitions should also be in tools.py to keep in sync, but for now we keep schema here.
         tools = [
             {
                 "type": "function",
@@ -171,6 +179,23 @@ class OrionLLM:
                             }
                         },
                         "required": ["content", "category"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "schedule_internal_reflection",
+                    "description": "Agenda un tema para reflexionar internamente más tarde. Úsalo cuando detectes un tema complejo, filosófico o técnico que requiere análisis profundo pero que no es urgente responder ahora.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "topic": {
+                                "type": "string",
+                                "description": "El tema o pregunta a reflexionar (ej: 'Paradoja de Fermi', 'Optimización de base de datos')."
+                            }
+                        },
+                        "required": ["topic"]
                     }
                 }
             },
@@ -280,11 +305,29 @@ class OrionLLM:
                                 except Exception as e:
                                     print(f"ERROR executing callback: {e}")
                                     result_msg = f"Error saving preference: {e}"
+                        
+                        elif tool_name == "schedule_internal_reflection":
+                            func_args = json.loads(tool_call["function"]["arguments"])
+                            topic = func_args.get("topic")
+                            
+                            result_msg = "Error executing tool"
+                            if reflection_callback:
+                                try:
+                                    print(f"DEBUG: Executing schedule_internal_reflection({topic})")
+                                    reflection_callback(topic)
+                                    result_msg = f"Tema agendado para reflexión: {topic}"
+                                except Exception as e:
+                                    print(f"ERROR executing reflection callback: {e}")
+                                    result_msg = f"Error scheduling reflection: {e}"
+                            else:
+                                result_msg = "Tool not available (callback not provided)."
 
                         elif tool_name == "search_internet":
                              func_args = json.loads(tool_call["function"]["arguments"])
                              query = func_args.get("query")
-                             result_msg = self._execute_tavily_search(query)
+                             # Use the imported tool from tools.py
+                             from .tools import search_web 
+                             result_msg = search_web(query)
 
                         else:
                              result_msg = f"Unknown tool: {tool_name}"
