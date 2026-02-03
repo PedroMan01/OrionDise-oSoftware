@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../styles/LoginForm.css'; // Reutilizamos los estilos del login
+import '../styles/LoginForm.css';
 
 function RegisterForm({ t }) {
     const [email, setEmail] = useState('');
@@ -14,7 +14,10 @@ function RegisterForm({ t }) {
 
         try {
             // Conectamos con tu endpoint de registro en FastAPI
-            const response = await fetch('http://localhost:8000/register', {
+            // Usamos window.location.hostname para que funcione en red local (móvil)
+            const protocol = window.location.protocol;
+            const host = window.location.hostname;
+            const response = await fetch(`${protocol}//${host}:8000/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -30,8 +33,9 @@ function RegisterForm({ t }) {
                 setError(data.detail || "Error al registrar usuario");
             }
         } catch (err) {
-            console.error(err);
-            setError("Error de conexión con el servidor");
+            console.error("Register Error:", err);
+            const targetUrl = `${protocol}//${host}:8000/register`;
+            setError(`Error de conexión a ${targetUrl}. Verifica que el backend esté accesible.`);
         }
     };
 
@@ -39,7 +43,7 @@ function RegisterForm({ t }) {
         <div className="login-page-container">
             <form onSubmit={handleSubmit} className="login-form">
                 <h2>{t('register.title')}</h2>
-                
+
                 <div className="form-group">
                     <label>{t('login.emailLabel')}</label>
                     <input
@@ -71,8 +75,8 @@ function RegisterForm({ t }) {
                 </button>
 
                 {/* Botón para volver al Login si ya tiene cuenta */}
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     onClick={() => navigate('/')}
                     style={{ marginTop: '10px', background: 'none', border: 'none', color: '#007bff', cursor: 'pointer', width: '100%' }}
                 >

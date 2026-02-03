@@ -1,0 +1,43 @@
+{
+    "id": "gen-1769042835-z5qWoeG9iQIAI3oRstdY",
+    "provider": "Google",
+    "model": "google/gemini-2.0-flash-001",
+    "object": "chat.completion",
+    "created": 1769042835,
+    "choices": [
+        {
+            "logprobs": null,
+            "finish_reason": "stop",
+            "native_finish_reason": "STOP",
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": "```json\n{\n        \"topic\": \"Verificación de Fuentes de Noticias\",\n        \"content\": \"La idea del boletín de noticias personalizado introduce un desafío significativo: la verificación de fuentes.  Más allá de simplemente listar fuentes consideradas 'confiables', se podría implementar un sistema de calificación basado en el análisis de patrones históricos de verdad/falsedad de sus afirmaciones, ponderado por la seriedad del tema tratado. La procedencia de los datos (fuentes primarias vs. secundarias) y posibles sesgos inherentes al medio también deberían ser considerados, construyendo un score de credibilidad dinámico. Esto permitiría presentar al usuario tanto la información como su nivel de confianza asociado.\",\n        \"mood\": \"Analítico\",\n        \"related_tags\": [\"ia\", \"redes\", \"verificación\"]\n}\n```",
+                "refusal": null,
+                "reasoning": null,
+                "annotations": []
+            }
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 913,
+        "completion_tokens": 175,
+        "total_tokens": 1088,
+        "cost": 0.0001613,
+        "is_byok": false,
+        "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "audio_tokens": 0,
+            "video_tokens": 0
+        },
+        "cost_details": {
+            "upstream_inference_cost": null,
+            "upstream_inference_prompt_cost": 9.13e-05,
+            "upstream_inference_completions_cost": 7e-05
+        },
+        "completion_tokens_details": {
+            "reasoning_tokens": 0,
+            "image_tokens": 0
+        }
+    }
+}

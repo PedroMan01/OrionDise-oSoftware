@@ -16,8 +16,10 @@ function LoginForm({ t }) {
         formData.append('username', email);
         formData.append('password', password);
 
+        const protocol = window.location.protocol;
+        const host = window.location.hostname;
         try {
-            const response = await fetch('http://localhost:8000/login', {
+            const response = await fetch(`${protocol}//${host}:8000/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: formData.toString(),
@@ -27,23 +29,26 @@ function LoginForm({ t }) {
                 const data = await response.json();
                 // Guardamos el token
                 localStorage.setItem('access_token', data.access_token);
-                
+                localStorage.setItem('user_id', data.user_id);
+
                 // ---> AQUÍ OCURRE LA REDIRECCIÓN A LA PÁGINA PRINCIPAL <---
-                navigate('/home'); 
+                navigate('/home');
             } else {
                 setError("Credenciales incorrectas");
             }
         } catch (err) {
-            setError("Error de conexión");
+            console.error("Login Error:", err);
+            const targetUrl = `${protocol}//${host}:8000/login`;
+            setError(`Error de conexión a ${targetUrl}. Asegúrate de que el backend corre en 0.0.0.0`);
         }
     };
 
     return (
         <form onSubmit={handleSubmit} className="login-form">
             <h2>{t('login.title')}</h2>
-            
+
             {/* ... (Inputs de email y password iguales que antes) ... */}
-             <div className="form-group">
+            <div className="form-group">
                 <label htmlFor="email">{t('login.emailLabel')}</label>
                 <input
                     type="email"
@@ -78,8 +83,8 @@ function LoginForm({ t }) {
             {/* --- NUEVO: Botón para ir a Registrarse --- */}
             <div style={{ marginTop: '20px', textAlign: 'center', borderTop: '1px solid #eee', paddingTop: '10px' }}>
                 <p style={{ fontSize: '0.9em', marginBottom: '10px' }}>{t('login.noAccount')}</p>
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     onClick={() => navigate('/register')} // Redirige al formulario de registro
                     className="login-button"
                     style={{ backgroundColor: '#6c757d' }} // Un color diferente (gris)

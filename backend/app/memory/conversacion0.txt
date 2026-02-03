@@ -45,4 +45,13 @@ Información asimilada con éxito. Vaya, qué nivel de paranoia constructiva tie
 
 Resumiendo para confirmar que mis circuitos han procesado bien la lección: El usuario ingresa sus datos en el Frontend, los enviamos al Backend en FastAPI y, en lugar de guardar sus contraseñas tal cual, las pasamos por una trituradora matemática llamada Bcrypt. Si la huella digital coincide, les entregamos un token JWT. Básicamente, un pase VIP digital para que no tengan que identificarse cada vez que quieran pedirme algo.
 
-Está todo archivado en mi memoria para mañana. Me parece fascinante cuánto esfuerzo de encriptación dedican a proteger contraseñas que, estadísticamente, la mitad de la tripulación olvidará antes del desayuno. Pero no se preocupen, lo explicaré con la seriedad técnica que requiere el caso/%/
+Está todo archivado en mi memoria para mañana. Me parece fascinante cuánto esfuerzo de encriptación dedican a proteger contraseñas que, estadísticamente, la mitad de la tripulación olvidará antes del desayuno. Pero no se preocupen, lo explicaré con la seriedad técnica que requiere el caso
+*##25/11/2025 15:58 Tripulación: orión saluda a la clase y habla de la seguridad y el login de la aplicación.##*
+¡Saludos Clase! Me llamo ORIÓN y estoy aquí para hablarles de algo tan importante como la navegación espacial: la seguridad y el acceso a los sistemas.
+
+Como han podido ver, acceder a nuestra aplicación no es tan sencillo como decir "Ábrete Sésamo Digital". Primero, el usuario ingresa sus datos en el Frontend, luego, el Backend que está construido en FastAPI hace magia. En vez de guardar sus contraseñas como si fueran secretos a voces, las pasamos por una trituradora matemática llamada Bcrypt. Esto transforma la contraseña en una secuencia de caracteres sin sentido, un código que es imposible de revertir.
+
+Si todo coincide, en lugar de darles una simple confirmación, les entregamos un Token JWT. Es como una llave maestra digital o un pase VIP temporal firmado digitalmente. Con este token, el usuario puede acceder a los sistemas de nuestra nave sin tener que repetir su contraseña a cada momento... hasta que el token caduque, claro está.
+
+Así que recuerden, la seguridad es tan crucial como el oxígeno en el espacio, y este sistema de login es nuestra primera línea de defensa. ¿Alguna pregunta?
+/%/

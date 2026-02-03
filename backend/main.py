@@ -1,187 +1,117 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
-from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
 import os
 
-# --- Importaciones de Módulos Locales ---
-from . import models                 # Modelos de SQLAlchemy
-from .database import engine, get_db # Conexión a la DDBB y Dependencia
-from . import crud, schemas          # Lógica de CRUD y Esquemas de Datos
-from .security import verify_password # Utilidad de verificación de contraseña
+from . import models, crud, schemas
+from .database import engine, get_db
+from .security import verify_password
+from .app.routes import router as app_router
+from .app.services import thought_service
+from .app.global_state import global_state
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from datetime import datetime
 
-# --- IMPORTANTE: Importar el router de tu aplicación (IA / Activar) ---
-from .app.routes import router as app_router 
-
-# LÍNEA CRÍTICA: Crea las tablas en la base de datos (sql_app.db) si no existen
+# Initialize Tables
 models.Base.metadata.create_all(bind=engine)
 
-# Configuración del directorio de almacenamiento
-STORAGE_DIR = "backend/file_storage"
-if not os.path.exists(STORAGE_DIR):
-    os.makedirs(STORAGE_DIR)
+app = FastAPI(title="Orion Assistant API")
 
-# --- Inicialización de FastAPI ---
-app = FastAPI()
-
-# --- INTEGRACIÓN DEL ROUTER DE LA IA (Solución al error 404) ---
-# Esto conecta las rutas de backend/app/routes.py (como /activar) con la app principal
-app.include_router(app_router)
-
-
-# --- Configuración de CORS ---
-FRONTEND_URL = "http://localhost:5173"
-
-# Middleware oficial para CORS
+# --- CORS ---
+origins = ["*"] # Allow all for VPN/Dev access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Middleware estático para asegurar headers en archivos
-class CORSMiddlewareStatic(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        response = await call_next(request)
-        response.headers["Access-Control-Allow-Origin"] = FRONTEND_URL
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "*"
-        return response
+# --- ROUTERS ---
+app.include_router(app_router) 
 
-app.add_middleware(CORSMiddlewareStatic)
+# --- STATIC FILES ---
+from pathlib import Path
 
+# ... (imports)
 
-# --- Montaje de Archivos Estáticos ---
-# Asegúrate de que la carpeta exista, si no, FastAPI lanzará un error al iniciar
-AUDIO_DIR = "backend/app/audio"
-if not os.path.exists(AUDIO_DIR):
-    os.makedirs(AUDIO_DIR)
-    
+# --- STATIC FILES ---
+BASE_DIR = Path(__file__).resolve().parent
+AUDIO_DIR = BASE_DIR / "app" / "audio"
+if not AUDIO_DIR.exists():
+    AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/audio", StaticFiles(directory=AUDIO_DIR), name="audio")
-
 
 @app.get("/")
 def root():
-    return {"mensaje": "Backend de ORIÓN activo 🚀", "status": "Database Ready"}
+    return {"message": "Orion Backend Online 🚀"}
 
+# --- SCHEDULER ---
+scheduler = AsyncIOScheduler()
 
-# ==========================================
-#      RUTAS DE AUTENTICACIÓN (AUTH)
-# ==========================================
+def check_inactivity_and_think():
+    """
+    Checks if user has been inactive for > 120 minutes (7200 seconds).
+    If so, triggers a thought cycle.
+    """
+    last_active = global_state.get_last_interaction()
+    delta_seconds = (datetime.now() - last_active).total_seconds()
+    
+    print(f"[Scheduler] Checking inactivity... Delta: {delta_seconds}s")
+    
+    if delta_seconds > 7200: # 120 minutes (Global inactivity for now)
+        print("[Scheduler] Inactivity detected. Triggering thought cycle for ALL users.")
+        # We need a db session here. 
+        # Since this is a job, we create a new session
+        db = next(get_db())
+        try:
+            # Multi-user support
+            users = db.query(models.User).all()
+            for user in users:
+                print(f"[Scheduler] Thinking for User {user.id} ({user.email})...")
+                thought_service.generate_thought_cycle(db, user_id=user.id) 
+        except Exception as e:
+            print(f"[Scheduler] Error in thought cycle: {e}")
+        finally:
+            db.close()
 
-## 1. REGISTRO DE USUARIO
-@app.post("/register", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
+@app.on_event("startup")
+def startup_event():
+    # Initialize scheduler
+    # Run every 30 minutes = 1800 seconds
+    scheduler.add_job(check_inactivity_and_think, 'interval', minutes=30)
+    scheduler.start()
+    print("[System] APScheduler started.")
+
+# --- AUTH ---
+
+@app.post("/register", response_model=schemas.User, status_code=status.HTTP_201_CREATED, tags=["Auth"])
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    # Verificar si el email ya existe
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="El correo electrónico ya está registrado."
-        )
-    new_user = crud.create_user(db=db, user=user)
-    return new_user
+        raise HTTPException(status_code=400, detail="Email already registered")
+    return crud.create_user(db=db, user=user)
 
-## 2. INICIO DE SESIÓN
-@app.post("/login")
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@app.post("/login", tags=["Auth"])
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = crud.get_user_by_email(db, email=form_data.username)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales incorrectas",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    if not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales incorrectas",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    # Generar token simple (fake)
-    access_token = f"fake_token_for_user_{user.id}" 
-    return {"access_token": access_token, "token_type": "bearer", "user_id": user.id}
-
-
-# ==========================================
-#      RUTAS DE CRUD DE ARCHIVOS
-# ==========================================
-
-## 3. GUARDAR CONVERSACIÓN (Create)
-@app.post("/files/save", response_model=schemas.ConversationFile, status_code=status.HTTP_201_CREATED)
-def save_conversation(data: schemas.ConversationFileCreate, db: Session = Depends(get_db)):
-    user_id_temp = 1 # ID temporal
-    
-    import time
-    timestamp = int(time.time())
-    unique_filename = f"user_{user_id_temp}_{timestamp}.txt"
-    file_path = os.path.join(STORAGE_DIR, unique_filename)
-    
-    try:
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(data.content)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al escribir el archivo en disco: {e}"
-        )
-
-    db_file = crud.create_conversation_file(
-        db=db, 
-        user_id=user_id_temp, 
-        filename=unique_filename,
-        filepath=file_path
-    )
-    return db_file
-
-## 4. LISTAR CONVERSACIONES (Read List)
-@app.get("/files/{user_id}", response_model=list[schemas.ConversationFile])
-def get_conversations_list(user_id: int, db: Session = Depends(get_db)):
-    files = crud.get_user_files(db, user_id=user_id)
-    if not files:
-        return []
-    return files
-
-## 5. OBTENER CONTENIDO (Read Content)
-@app.get("/files/content/{file_id}")
-def get_file_content(file_id: int, db: Session = Depends(get_db)):
-    db_file = crud.get_file_by_id(db, file_id=file_id)
-    if not db_file:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Archivo no encontrado.")
-        
-    try:
-        with open(db_file.filepath, "r", encoding="utf-8") as f:
-            content = f.read()
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al leer el archivo en disco.")
-
     return {
-        "file_id": db_file.id,
-        "filename": db_file.filename,
-        "content": content
+        "access_token": f"fake_token_{user.id}", 
+        "token_type": "bearer",
+        "user_id": user.id
     }
 
-## 6. ELIMINAR CONVERSACIÓN (Delete)
-@app.delete("/files/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_conversation_file(file_id: int, db: Session = Depends(get_db)):
-    db_file = crud.get_file_by_id(db, file_id=file_id)
-    if not db_file:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Archivo no encontrado.")
-        
-    if os.path.exists(db_file.filepath):
-        try:
-            os.remove(db_file.filepath)
-        except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-                detail="Error al eliminar el archivo físico del disco."
-            )
-
-    crud.delete_file(db, db_file)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Admin"])
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    """
+    Deletes a user and all their associated data (messages, files) via Cascade.
+    """
+    success = crud.delete_user(db, user_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": "User deleted"}

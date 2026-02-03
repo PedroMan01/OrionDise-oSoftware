@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+sqlalchemy
+passlib
+python-multipart
+python-dotenv
+requests
+openai
+sentence-transformers
+numpy
+apscheduler

@@ -101,15 +101,7 @@
   },
   {
     "role": "user",
-    "content": "25/11/2025 00:30 Tripulación: ¿orión puedes hablarnos del login de esta aplicación y de la seguridad?"
-  },
-  {
-    "role": "assistant",
-    "content": "\n¡Absolutamente! En esta aplicación, la seguridad del inicio de sesión es una prioridad, y se maneja de la siguiente manera:\n\nCuando un usuario quiere registrarse, introduce sus datos en el área principal. Estos datos se envían a la parte trasera, donde reside un sistema llamado FastAPI. Aquí es donde la cosa se pone interesante: en lugar de guardar directamente la contraseña del usuario, la \"cocinamos\" con una herramienta llamada Bcrypt, que la convierte en un código secreto e irreconocible. Solo guardamos este código secreto, así que incluso si alguien consiguiera acceso a la base de datos, no podría robar las contraseñas de los usuarios.\n\nCuando un usuario quiere iniciar sesión, presenta sus credenciales, el Backend busca ese codigo secreto encriptado y lo compara con la contraseña que se ha ingresado. Si \"matemáticamente\" coinciden, se genera una llave maestra: un Token JWT.\n\nEste token se guarda en el Frontend y se usa como un ticket VIP para ingresar a cada lugar del sistema sin tener que verificar nuevamente la identidad.\n\n¿Qué les parece? No es tan complicado, una vez que entiendes que el objetivo es hacer la vida difícil a los piratas informáticos.\n"
-  },
-  {
-    "role": "user",
-    "content": "25/11/2025 00:32 Tripulación: eh, creo que esta raya el borde haber orión cuéntame una historia muy larga."
+    "content": "25/11/2025 15:58 Tripulación: orión saluda a la clase y habla de la seguridad y el login de la aplicación."
   },
   {
     "role": "assistant",

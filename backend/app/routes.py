@@ -1,100 +1,195 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from .services.central import IA
-import os
-
+from sqlalchemy.orm import Session
+from ..database import get_db
+from .. import crud, schemas
+from .services.llm_service import orion_llm
+from .services.audio_service import audio_service
+from .global_state import global_state
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
-class OrionMessage(BaseModel):
+class ChatRequest(BaseModel):
     mensaje: str
+    user_id: int = 1 # Default to 1 for now if not provided, but ideally requires auth
 
 @router.post("/activar")
-async def activar_orion(data: OrionMessage): # <--- 3. USAR EL ESQUEMA AQUÍ
-    # Ya no necesitamos 'await request.json()'
-    # FastAPI valida y convierte los datos automáticamente
-    mensaje = data.mensaje
+async def chat_interaction(data: ChatRequest, db: Session = Depends(get_db)):
+    """
+    Main interaction point. 
+    1. Saves User message.
+    2. Gets LLM response.
+    3. Generates Audio.
+    4. Saves Assistant message.
+    5. Returns text + audio URL.
+    """
+    user_id = data.user_id
+    user_text = data.mensaje
 
-    print(f"🛰️ ENTRADA A /activar - Texto recibido: {mensaje}")
+    # 0. Update Activity
+    global_state.update_interaction()
 
-    print("Llamando a IA...")
-    Respuesta_IA = await IA(texto=mensaje)
-    print("Respuesta IA recibida")
+    # 1. Save User Message
+    msg_in = schemas.MessageCreate(role="user", content=user_text)
+    crud.create_message(db, user_id, msg_in)
 
-    print(f"🛰️ SALIDA /activar - Respuesta: {Respuesta_IA}")
+    # 2. Get History & LLM Response (Hybrid: Semantic + Recent)
+    # Fetch hybrid context
+    # Fetch hybrid context
+    context_data = crud.get_hybrid_context(db, user_id, user_text, limit_semantic=3, limit_recent=5)
+    
+    # Get User Profile
+    user_profile = crud.get_user_profile(db, user_id, user_text)
+    
+    llm_history = []
+    
+    # 1. Perfil de Usuario (System)
+    if user_profile:
+        llm_history.append({"role": "system", "content": user_profile})
+
+    # 2. Contexto Semántico (Pensamientos y Recuerdos)
+    for msg in context_data["semantic"]:
+         llm_history.append({"role": msg.role, "content": msg.content})
+         
+    # 3. Historial Reciente (Chat Inmediato)
+    for msg in context_data["recent"]:
+         if msg.content != user_text:
+             llm_history.append({"role": msg.role, "content": msg.content})
+    
+    # Define callback for tools
+    def upsert_callback(content, category):
+        crud.upsert_user_preference(db, user_id, content, category)
+
+    llm_output = orion_llm.get_response(user_text, user_id, llm_history, upsert_callback=upsert_callback)
+    
+    # Check if we got a dict (expected) or string (fallback)
+    if isinstance(llm_output, dict):
+        response_text = llm_output.get("response", "Error parsing response")
+        instructions = llm_output.get("instructions", "")
+    else:
+        response_text = str(llm_output)
+        instructions = ""
+
+    # 3. Generate Audio with Instructions
+    audio_file = await audio_service.generate_audio(response_text, user_id=user_id, instructions=instructions)
+    # Return relative path so frontend can construct URL based on its connection (IP/VPN)
+    audio_url = f"/audio/{audio_file}" if audio_file else None
+
+    # 4. Save Assistant Message
+    # Note: If tools were called, the LLM exchange already happened. We just save the final text response.
+    msg_out = schemas.MessageCreate(role="assistant", content=response_text, audio_path=audio_file)
+    crud.create_message(db, user_id, msg_out)
 
     return {
-        "text": Respuesta_IA["text"],
-        "audio_url": "http://localhost:8000/audio/output0_0.wav"
+        "text": response_text,
+        "audio_url": audio_url,
+        "instructions": instructions
     }
 
-@router.post("/encriptado")
-async def resolucion(request: Request):
-    data = await request.json()
-    mensaje = data.get("mensaje", "")
-    print(f"🛰️ Texto recibido: {mensaje}")
+# Endpoint for just retrieving history if needed
+@router.get("/history/{user_id}")
+def get_history(user_id: int, db: Session = Depends(get_db)):
+    return crud.get_chat_history(db, user_id)
 
-    archivo_path = os.path.join(os.path.dirname(__file__), "memory", "Variables.txt")
+@router.delete("/history/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def clear_history(user_id: int, db: Session = Depends(get_db)):
+    crud.clear_chat_history(db, user_id)
+    return
 
-    # Leer y modificar
-    with open(archivo_path, "r", encoding="utf-8") as f:
-        lineas = f.read().split("//")
+from fastapi import File, UploadFile
+import shutil
+import os
+from pathlib import Path
 
-    nuevas_lineas = []
-    for linea in lineas:
-        if not linea.strip():
-            continue
-        clave, valor = linea.strip().split(":", 1)
-        if clave == "Encriptado":
-            nuevas_lineas.append(f"{clave}:{mensaje}")
-        else:
-            nuevas_lineas.append(f"{clave}:{valor}")
+@router.post("/chat_audio")
+async def chat_audio_interaction(
+    file: UploadFile = File(...), 
+    user_id: int = 1, # Should be Form(...) but sticking to simple query param or default for now
+    db: Session = Depends(get_db)
+):
+    """
+    Receives audio file, transcribes it, and processes it as a chat message.
+    """
+    # 0. Update Activity
+    global_state.update_interaction()
 
-    # Escribir nuevamente
-    with open(archivo_path, "w", encoding="utf-8") as f:
-        f.write("//" + "//".join(nuevas_lineas))
+    # 1. Save temp file
+    temp_filename = f"temp_{file.filename}"
+    temp_path = Path("temp_audio")
+    temp_path.mkdir(exist_ok=True)
+    file_location = temp_path / temp_filename
+    
+    with open(file_location, "wb+") as file_object:
+        shutil.copyfileobj(file.file, file_object)
+        
+    # 2. Transcribe
+    transcribed_text = await audio_service.transcribe_audio(file_location)
+    
+    # Clean up temp file
+    # file_location.unlink() # Keep it for debugging? Or delete. Let's delete to save space.
+    try:
+         os.remove(file_location)
+    except:
+         pass
 
-    return {"text": mensaje}
+    if not transcribed_text:
+        raise HTTPException(status_code=400, detail="Could not transcribe audio")
 
-@router.post("/sensor")
-async def resolucion(request: Request):
-    data = await request.json()
-    mensaje = data.get("mensaje", "")
-    print(f"🛰️ Texto recibido: {mensaje}")
+    print(f"🎤 Transcription: {transcribed_text}")
 
-    archivo_path = os.path.join(os.path.dirname(__file__), "memory", "Variables.txt")
+    # 3. Process as normal chat
+    # reusing the logic from chat_interaction roughly
+    
+    # Save User Message
+    crud.create_message(db, user_id, schemas.MessageCreate(role="user", content=transcribed_text))
 
-    # Leer y modificar
-    with open(archivo_path, "r", encoding="utf-8") as f:
-        lineas = f.read().split("//")
+    # Get Hybrid Context
+    # Get Hybrid Context
+    context_data = crud.get_hybrid_context(db, user_id, transcribed_text, limit_semantic=5, limit_recent=5)
+    
+    # Get User Profile
+    user_profile = crud.get_user_profile(db, user_id, transcribed_text)
 
-    nuevas_lineas = []
-    for linea in lineas:
-        if not linea.strip():
-            continue
-        clave, valor = linea.strip().split(":", 1)
-        if clave == "Sensor":
-            nuevas_lineas.append(f"{clave}:{mensaje}")
-        else:
-            nuevas_lineas.append(f"{clave}:{valor}")
+    llm_history = []
+    
+    # 1. Perfil de Usuario
+    if user_profile:
+        llm_history.append({"role": "system", "content": user_profile})
 
-    # Escribir nuevamente
-    with open(archivo_path, "w", encoding="utf-8") as f:
-        f.write("//" + "//".join(nuevas_lineas))
+    # 2. Contexto Semántico
+    for msg in context_data["semantic"]:
+         llm_history.append({"role": msg.role, "content": msg.content})
 
-    return {"text": mensaje}
+    # 3. Historial Reciente
+    for msg in context_data["recent"]:
+        if msg.content != transcribed_text:
+            llm_history.append({"role": msg.role, "content": msg.content})
 
-@router.post("/movil")
-async def resolucion(request: Request):
-    return {"text"}
+    # Define callback
+    def upsert_callback(content, category):
+        crud.upsert_user_preference(db, user_id, content, category)
 
-@router.post("/Chat")
-async def resolucion(request: Request):
-    return {"text"}
-@router.post("/ChatVoz")
-async def resolucion(request: Request):
-    return {"text"}
-@router.post("/Asistente")
-async def resolucion(request: Request):
-    return {"text"}
+    # Get LLM Response
+    llm_output = orion_llm.get_response(transcribed_text, user_id, llm_history, upsert_callback=upsert_callback)
+    
+    if isinstance(llm_output, dict):
+        response_text = llm_output.get("response", "Error parsing response")
+        instructions = llm_output.get("instructions", "")
+    else:
+        response_text = str(llm_output)
+        instructions = ""
 
+    # Generate Audio
+    audio_file = await audio_service.generate_audio(response_text, user_id=user_id, instructions=instructions)
+    audio_url = f"/audio/{audio_file}" if audio_file else None
+
+    # Save Assistant Message
+    crud.create_message(db, user_id, schemas.MessageCreate(role="assistant", content=response_text, audio_path=audio_file))
+
+    return {
+        "text": response_text,
+        "audio_url": audio_url,
+        "instructions": instructions,
+        "transcription": transcribed_text
+    }

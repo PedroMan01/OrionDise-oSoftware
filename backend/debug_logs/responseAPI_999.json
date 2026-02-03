@@ -1,0 +1,43 @@
+{
+    "id": "gen-1768737210-WFUf3wI8K24X9Z0ZfQiP",
+    "provider": "Google",
+    "model": "google/gemini-2.0-flash-001",
+    "object": "chat.completion",
+    "created": 1768737210,
+    "choices": [
+        {
+            "logprobs": null,
+            "finish_reason": "stop",
+            "native_finish_reason": "STOP",
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": "```json\n{\n    \"response\": \"El precio actual de Bitcoin ronda los $95,000 USD, Capitán. Recuerde que este valor puede fluctuar dependiendo de la plataforma. ¡Y su capitalización de mercado se sitúa cerca de los $1.9 billones de dólares!\",\n    \"instructions\": \"Speak in a helpful and informative tone. Neutral Latin American Spanish. Moderate pace. Add a touch of enthusiasm when mentioning the market cap.\"\n}\n```",
+                "refusal": null,
+                "reasoning": null,
+                "annotations": []
+            }
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 1767,
+        "completion_tokens": 101,
+        "total_tokens": 1868,
+        "cost": 0.0002171,
+        "is_byok": false,
+        "prompt_tokens_details": {
+            "cached_tokens": 0,
+            "audio_tokens": 0,
+            "video_tokens": 0
+        },
+        "cost_details": {
+            "upstream_inference_cost": null,
+            "upstream_inference_prompt_cost": 0.0001767,
+            "upstream_inference_completions_cost": 4.04e-05
+        },
+        "completion_tokens_details": {
+            "reasoning_tokens": 0,
+            "image_tokens": 0
+        }
+    }
+}

@@ -1,18 +1,14 @@
 import React, { useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import RegisterForm from "./components/RegisterForm";
-// Componentes del proyecto anterior (mantenemos solo OrionListener)
 import OrionListener from "./components/OrionListener";
 
-// NUEVO: Componente Login que incluye el formulario y el selector de idioma
 import Login from "./components/Login";
-import ProtectedRoute from "./components/ProtectedRoute"; // NUEVO: Importamos el componente protector
+import ProtectedRoute from "./components/ProtectedRoute";
 
-// NUEVO: Importar los archivos de idioma y la función de traducción
 import es from './i18n/es.json';
 import en from './i18n/en.json';
 
-// Función de traducción simple dentro de App.jsx (para simplicidad)
 const translations = { es, en };
 
 const translate = (lang, key) => {

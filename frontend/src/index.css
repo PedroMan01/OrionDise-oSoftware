@@ -18,8 +18,7 @@
   display: flex;
   justify-content: center;
   background-color: black;
-  height: 100vh;
-  align-items: center;
+  min-height: 100dvh;
 }
 
 a {
