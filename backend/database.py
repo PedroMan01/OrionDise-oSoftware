@@ -5,8 +5,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # 1. Definición del archivo SQLite local
-# Esto crea el archivo 'sql_app.db' en el mismo directorio.
-SQLALCHEMY_DATABASE_URL = "sqlite:///./backend/sql_app.db"
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{BASE_DIR}/sql_app.db"
 
 # 2. Creación del motor (Engine)
 # connect_args es necesario solo para SQLite

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_URL } from "../config";
 
 const palabras = [
   "CASUAL", "CARGAR", "CANTAR", "CABLES",
@@ -64,7 +65,7 @@ const CriptMinigame = () => {
 
     if (palabra === clave) {
       setMensaje("🔓 ¡Acceso concedido!");
-      fetch("http://localhost:8000/encriptado", {
+      fetch(`${API_URL}/encriptado`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mensaje: "Desencriptado" }),
@@ -87,7 +88,7 @@ const CriptMinigame = () => {
       <p className="mb-3">INTENTOS RESTANTES: {intentos}</p>
       {pantalla.map(({ texto, idx }) => {
         const elementos = [];
-        for (let i = 0; i < texto.length; ) {
+        for (let i = 0; i < texto.length;) {
           const clickeable = clickables.find(
             (c) => c.inicio === i && pantalla[idx].texto.includes(c.palabra)
           );

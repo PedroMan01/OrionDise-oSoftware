@@ -1,5 +1,6 @@
 import requests
 import json
+import re
 import os
 from dotenv import load_dotenv
 
@@ -377,19 +378,31 @@ class OrionLLM:
                     if not content_str: 
                         return {"response": "...", "instructions": "Silence."}
 
-                    # Clean up markdown code blocks if present
-                    if content_str.startswith("```json"):
-                        content_str = content_str.replace("```json", "").replace("```", "")
+                    # Robust Cleaning with Regex
+                    clean_text = re.sub(r'^```json\s*', '', content_str, flags=re.MULTILINE)
+                    clean_text = re.sub(r'^```\s*', '', clean_text, flags=re.MULTILINE)
+                    clean_text = re.sub(r'```\s*$', '', clean_text, flags=re.MULTILINE)
+                    clean_text = clean_text.strip()
                     
-                    content_json = json.loads(content_str)
+                    content_json = json.loads(clean_text)
                     return content_json
-                except json.JSONDecodeError:
-                    print(f"[ERROR] LLM no retornó JSON válido. Raw: {content_str}")
-                    # Fallback
-                    return {
-                        "response": content_str,
-                        "instructions": "Speak naturally."
-                    }
+                except json.JSONDecodeError as e:
+                    print(f"[ERROR] LLM no retornó JSON válido. Raw: {content_str} | Error: {e}")
+                    
+                    # Fallback depends on context
+                    if system_prompt_override:
+                        # Thought Service Context
+                        return {
+                            "topic": "Error de Parsing",
+                            "content": content_str,
+                            "type": "error"
+                        }
+                    else:
+                        # Chat Context
+                        return {
+                            "response": content_str,
+                            "instructions": "Speak naturally."
+                        }
 
             else:
                 print(f"[ERROR] Respuesta vacía o malformada: {response_data}")

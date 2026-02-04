@@ -5,12 +5,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 import os
 
-from . import models, crud, schemas
-from .database import engine, get_db
-from .security import verify_password
-from .app.routes import router as app_router
-from .app.services import thought_service
-from .app.global_state import global_state
+import models, crud, schemas
+from database import engine, get_db
+from security import verify_password
+from app.routes import router as app_router
+from app.services import thought_service
+from app.global_state import global_state
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime
 
@@ -20,7 +20,14 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Orion Assistant API")
 
 # --- CORS ---
-origins = ["*"] # Allow all for VPN/Dev access
+# --- CORS ---
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://100.76.72.19:5173", # Mobile/LAN access
+    "*" 
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

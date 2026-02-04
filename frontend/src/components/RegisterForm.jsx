@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../config';
 import '../styles/LoginForm.css';
 
 function RegisterForm({ t }) {
@@ -14,10 +15,8 @@ function RegisterForm({ t }) {
 
         try {
             // Conectamos con tu endpoint de registro en FastAPI
-            // Usamos window.location.hostname para que funcione en red local (móvil)
-            const protocol = window.location.protocol;
-            const host = window.location.hostname;
-            const response = await fetch(`${protocol}//${host}:8000/register`, {
+            // Usamos API_URL desde config para soporte LAN/Móvil
+            const response = await fetch(`${API_URL}/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -34,8 +33,7 @@ function RegisterForm({ t }) {
             }
         } catch (err) {
             console.error("Register Error:", err);
-            const targetUrl = `${protocol}//${host}:8000/register`;
-            setError(`Error de conexión a ${targetUrl}. Verifica que el backend esté accesible.`);
+            setError(`Error de conexión a ${API_URL}/register. Verifica que el backend esté accesible.`);
         }
     };
 

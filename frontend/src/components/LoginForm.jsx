@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../config';
 import '../styles/LoginForm.css';
 
 function LoginForm({ t }) {
@@ -16,10 +17,8 @@ function LoginForm({ t }) {
         formData.append('username', email);
         formData.append('password', password);
 
-        const protocol = window.location.protocol;
-        const host = window.location.hostname;
         try {
-            const response = await fetch(`${protocol}//${host}:8000/login`, {
+            const response = await fetch(`${API_URL}/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: formData.toString(),
@@ -38,8 +37,7 @@ function LoginForm({ t }) {
             }
         } catch (err) {
             console.error("Login Error:", err);
-            const targetUrl = `${protocol}//${host}:8000/login`;
-            setError(`Error de conexión a ${targetUrl}. Asegúrate de que el backend corre en 0.0.0.0`);
+            setError(`Error de conexión a ${API_URL}/login. Asegúrate de que el backend corre en 0.0.0.0`);
         }
     };
 

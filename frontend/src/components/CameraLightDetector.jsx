@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
+import { API_URL } from "../config";
 
 const CameraLightDetector = () => {
   const videoRef = useRef(null);
@@ -42,11 +43,11 @@ const CameraLightDetector = () => {
     let totalLuminancia = 0;
 
     for (let i = 0; i < frame.data.length; i += 4) {
-        const r = frame.data[i];
-        const g = frame.data[i + 1];
-        const b = frame.data[i + 2];
-        const luminancia = 0.4 * r + 0.4 * g + 0.4 * b;
-        totalLuminancia += luminancia;
+      const r = frame.data[i];
+      const g = frame.data[i + 1];
+      const b = frame.data[i + 2];
+      const luminancia = 0.4 * r + 0.4 * g + 0.4 * b;
+      totalLuminancia += luminancia;
     }
 
     const promedio = totalLuminancia / (frame.data.length / 4);
@@ -54,22 +55,22 @@ const CameraLightDetector = () => {
 
     // Solo si el estado cambió
     if (nuevoEstado !== estadoAnterior) {
-        setEstadoAnterior(nuevoEstado);
-        setEstadoLuz(nuevoEstado === "encendida" ? "💡 Luz encendida" : "🌑 Luz apagada");
+      setEstadoAnterior(nuevoEstado);
+      setEstadoLuz(nuevoEstado === "encendida" ? "💡 Luz encendida" : "🌑 Luz apagada");
 
-        // Enviar POST solo si la luz se APAGA (según lo que dijiste)
-        if (nuevoEstado === "apagada") {
-            fetch("http://localhost:8000/sensor", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ mensaje: "Apagado" }),
-            })
-            .then((res) => res.json())
-            .then((data) => console.log("🔁 Backend respondió:", data))
-            .catch((err) => console.error("❌ Error al notificar backend:", err));
-        }
+      // Enviar POST solo si la luz se APAGA (según lo que dijiste)
+      if (nuevoEstado === "apagada") {
+        fetch(`${API_URL}/sensor`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mensaje: "Apagado" }),
+        })
+          .then((res) => res.json())
+          .then((data) => console.log("🔁 Backend respondió:", data))
+          .catch((err) => console.error("❌ Error al notificar backend:", err));
+      }
     }
-    };
+  };
 
 
   return (

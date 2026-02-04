@@ -1,5 +1,6 @@
 
 import { useEffect, useRef, useState } from "react";
+import { API_URL } from "../config";
 
 const MobileListener = () => {
     const [isListening, setIsListening] = useState(false);
@@ -155,11 +156,8 @@ const MobileListener = () => {
     const sendToBackend = (text) => {
         setStatus("Procesando...");
         const userId = localStorage.getItem("user_id") || 1;
-        const protocol = window.location.protocol;
-        const host = window.location.hostname;
-        const port = window.location.port || "8000";
 
-        fetch(`${protocol}//${host}:8000/activar`, {
+        fetch(`${API_URL}/activar`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -174,7 +172,7 @@ const MobileListener = () => {
 
                     let finalUrl = data.audio_url;
                     if (!finalUrl.startsWith("http")) {
-                        finalUrl = `${protocol}//${host}:8000${data.audio_url}`;
+                        finalUrl = `${API_URL}${data.audio_url}`;
                     }
 
                     playAudio(`${finalUrl}?t=${Date.now()}`);

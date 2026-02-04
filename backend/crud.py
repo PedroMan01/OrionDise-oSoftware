@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from . import models, schemas
-from .security import hash_password
+import models, schemas
+from security import hash_password
 from datetime import datetime, timedelta
 
 # --- USER OPERATIONS ---
@@ -54,7 +54,7 @@ def delete_file(db: Session, db_file: models.ConversationFile):
 
 # --- CHAT/MESSAGE OPERATIONS (New) ---
 import numpy as np
-from .app.services.vector_service import vector_service
+from app.services.vector_service import vector_service
 
 def create_message(db: Session, user_id: int, message: schemas.MessageCreate):
     # Generate embedding

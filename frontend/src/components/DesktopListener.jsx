@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { API_URL } from "../config";
 
 const DesktopListener = () => {
     const [escuchando, setEscuchando] = useState(false);
@@ -130,29 +131,32 @@ const DesktopListener = () => {
                         console.log("📤 Enviando mensaje al backend:", fraseFinal);
 
                         const userId = localStorage.getItem("user_id") || 1;
-                        const protocol = window.location.protocol;
-                        const host = window.location.hostname;
 
-                        fetch(`${protocol}//${host}:8000/activar`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                mensaje: fraseFinal,
-                                user_id: parseInt(userId)
-                            }),
-                        })
-                            .then((res) => res.json())
-                            .then((data) => {
+                        const sendAudio = async () => {
+                            try {
+                                const response = await fetch(`${API_URL}/activar`, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                        mensaje: fraseFinal,
+                                        user_id: parseInt(userId)
+                                    }),
+                                });
+
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                }
+
+                                const data = await response.json();
                                 console.log("📥 Respuesta recibida del backend:", data);
                                 if (data.instructions) {
                                     console.log("🔊 TTS Instructions:", data.instructions);
                                 }
                                 if (data.audio_url) {
                                     // Backend sends relative path "/audio/..."
-                                    // Must prepend backend origin
                                     let finalUrl = data.audio_url;
                                     if (!finalUrl.startsWith("http")) {
-                                        finalUrl = `${protocol}//${host}:8000${data.audio_url}`;
+                                        finalUrl = `${API_URL}${data.audio_url}`;
                                     }
                                     reproducirRespuesta(`${finalUrl}?t=${Date.now()}`);
                                 } else {
@@ -162,13 +166,15 @@ const DesktopListener = () => {
                                         iniciarEscucha();
                                     }, 350);
                                 }
-                            })
-                            .catch((err) => {
+                            } catch (err) {
                                 console.error("Error fetch activar:", err);
+                                // Recuperación robusta: reiniciamos la escucha
                                 procesandoRef.current = false;
                                 escucha.current = true;
                                 setTimeout(() => iniciarEscucha(), 350);
-                            });
+                            }
+                        };
+                        sendAudio();
 
                         break;
                     }

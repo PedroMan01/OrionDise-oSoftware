@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from ..database import get_db
-from .. import crud, schemas
-from .services.llm_service import orion_llm
-from .services.audio_service import audio_service
-from .global_state import global_state
+from database import get_db
+import crud, schemas
+from app.services.llm_service import orion_llm
+from app.services.audio_service import audio_service
+from app.global_state import global_state
 from datetime import datetime, timedelta
 
 router = APIRouter()

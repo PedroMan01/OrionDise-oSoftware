@@ -4,10 +4,7 @@ import logging
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-# from backend import models, schemas, crud
-# Using relative imports correctly for: backend.app.services.thought_service
-# ... = backend
-from ... import models, schemas, crud
+import models, schemas, crud
 from .llm_service import orion_llm
 from .vector_service import vector_service
 from .tools import search_web
