@@ -46,10 +46,47 @@ Eres el Núcleo de Conciencia de ORIÓN. Tu objetivo es procesar temas pendiente
     }
 """
 
-def generate_thought_cycle(db: Session, user_id: int = None):
+def is_eligible_for_thought(db: Session, max_daily: int = 30) -> bool:
+    """
+    Verifies if the agent is allowed to think based on daily quota and backlog.
+    """
+    # 1. Check Daily Quota (Cost Safety)
+    today = datetime.utcnow().date()
+    start_of_day = datetime(today.year, today.month, today.day)
+    
+    daily_count = db.query(models.Thought).filter(
+        models.Thought.agent_id == AGENT_ID,
+        models.Thought.created_at >= start_of_day
+    ).count()
+
+    # 2. Check Backlog
+    pending_count = db.query(models.ReflectionBacklog).filter(
+        models.ReflectionBacklog.status == "pending"
+    ).count()
+    
+    logger.info(f"[ThoughtEligibility] Daily: {daily_count}/{max_daily} | Pending: {pending_count}")
+
+    # Logic: Eligible if under quota OR if there is urgent work (backlog)
+    # The user instruction implies checking both. We'll allow backlog to override quota 
+    # slightly, or strict quota? "seguro en costos" implies strictness.
+    # However, "force" in scheduler implies we really want to process pending.
+    # Let's be strict on autonomous/random, but lenient on backlog.
+    
+    if daily_count < max_daily:
+        return True
+    
+    if pending_count > 0:
+        logger.info("[ThoughtEligibility] Quota exceeded but Backlog items present. Allowing override.")
+        return True
+
+    logger.warning("[ThoughtEligibility] Daily quota exceeded. Skipping thought.")
+    return False
+
+def generate_thought_cycle(db: Session, user_id: int = None, force: bool = False):
     """
     Triggers the internal thought process.
     Unified Agent Mode: Ignores user_id for isolation, uses it only for context if needed.
+    Force: If True, indicates high priority (e.g. pending items), though logic is largely handled solely by availability.
     """
     global IS_THINKING
     
@@ -58,7 +95,7 @@ def generate_thought_cycle(db: Session, user_id: int = None):
         return
 
     IS_THINKING = True
-    print(f"[ThoughtCycle] Starting Proactive Cycle for AGENT={AGENT_ID}...")
+    print(f"[ThoughtCycle] Starting Proactive Cycle for AGENT={AGENT_ID} (Force={force})...")
     
     try:
         # 1. Check Reflection Backlog
@@ -131,24 +168,50 @@ def generate_thought_cycle(db: Session, user_id: int = None):
             system_prompt_override=system_prompt
         )
 
-        # 4. Parse Response
+        # 4. Parse Response (Robust)
         topic = selected_topic
         thought_content = ""
         mood = "Neutral"
         status = "completed"
 
         if isinstance(llm_output, dict):
-            topic = llm_output.get("topic", selected_topic)
-            thought_content = llm_output.get("content")
-            mood = llm_output.get("mood", "Analítico")
-            status = llm_output.get("status", "completed")
-            
-            if not thought_content:
-                 logger.error(f"[ThoughtCycle] No content generated.")
-                 IS_THINKING = False
-                 return
+            try:
+                # Intento de acceso seguro con validación
+                # El usuario reportó KeyErrors, así que usaremos un enfoque defensivo
+                
+                # Check for error type response from LLM service fallback
+                if llm_output.get("type") == "error":
+                    logger.warning(f"[ThoughtCycle] LLM Service reportó error de parsing. Usando fallback.")
+                    # Aún así intentamos sacar algo si es posible, o abortamos
+                    # Si hay contenido crudo, tal vez podamos rescatarlo (opcional)
+                    
+                # Access keys
+                possible_topic = llm_output.get("topic")
+                if possible_topic:
+                     topic = possible_topic
+                elif topic is None:
+                     # Si no habia selected_topic y el LLM no dio uno, fatal.
+                     topic = "Reflexión General"
+
+                thought_content = llm_output.get("content", "")
+                mood = llm_output.get("mood", "Analítico")
+                status = llm_output.get("status", "completed")
+
+                if not thought_content:
+                     # Check keys case-insensitive just in case?
+                     # For now, strict.
+                     logger.error(f"[ThoughtCycle] 'content' is empty/missing in LLM output: {json.dumps(llm_output, indent=2)}")
+                     IS_THINKING = False
+                     return
+
+            except Exception as e:
+                logger.error(f"[ThoughtCycle] Error parsing LLM output structure: {e}")
+                logger.error(f"Raw Output: {llm_output}")
+                IS_THINKING = False
+                return
         else:
             logger.error(f"[ThoughtCycle] Invalid output format: {type(llm_output)}")
+            logger.error(f"Raw Output: {llm_output}")
             IS_THINKING = False
             return
 

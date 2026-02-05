@@ -137,6 +137,10 @@ class OrionLLM:
         # Construct messages
         # Use override if provided, else default to self.role
         sys_content = system_prompt_override if system_prompt_override else self.role
+        
+        # Enforce strict JSON output
+        sys_content += "\nResponde ÚNICAMENTE en formato JSON puro, sin texto adicional ni bloques de código markdown."
+
         messages = [{"role": "system", "content": sys_content}]
         messages.extend(history)
         messages.append({"role": "user", "content": user_input})
@@ -378,14 +382,28 @@ class OrionLLM:
                     if not content_str: 
                         return {"response": "...", "instructions": "Silence."}
 
-                    # Robust Cleaning with Regex
-                    clean_text = re.sub(r'^```json\s*', '', content_str, flags=re.MULTILINE)
-                    clean_text = re.sub(r'^```\s*', '', clean_text, flags=re.MULTILINE)
-                    clean_text = re.sub(r'```\s*$', '', clean_text, flags=re.MULTILINE)
-                    clean_text = clean_text.strip()
-                    
-                    content_json = json.loads(clean_text)
-                    return content_json
+                    # Robust Cleaning with Regex to extract JSON object
+                    # Find the first '{' and the last '}'
+                    try:
+                        match = re.search(r'(\{.*\})', content_str, re.DOTALL)
+                        if match:
+                            clean_text = match.group(1)
+                        else:
+                            clean_text = content_str.strip()
+                            
+                        content_json = json.loads(clean_text, strict=False)
+                        return content_json
+                    except json.JSONDecodeError as e:
+                        # Attempt one more cleanup for common markdown issues
+                         clean_text = re.sub(r'^```json\s*', '', content_str, flags=re.MULTILINE)
+                         clean_text = re.sub(r'^```\s*', '', clean_text, flags=re.MULTILINE)
+                         clean_text = re.sub(r'```\s*$', '', clean_text, flags=re.MULTILINE)
+                         clean_text = clean_text.strip()
+                         
+                         try:
+                             return json.loads(clean_text, strict=False)
+                         except:
+                             raise e # Raise original error to be caught by outer block
                 except json.JSONDecodeError as e:
                     print(f"[ERROR] LLM no retornó JSON válido. Raw: {content_str} | Error: {e}")
                     

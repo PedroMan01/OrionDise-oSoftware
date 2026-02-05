@@ -56,38 +56,77 @@ def root():
     return {"message": "Orion Backend Online 🚀"}
 
 # --- SCHEDULER ---
+# --- SCHEDULER ---
 scheduler = AsyncIOScheduler()
+import random # Local import to avoid top-level clutter or add to top
 
 def check_inactivity_and_think():
     """
-    Checks if user has been inactive for > 120 minutes (7200 seconds).
-    If so, triggers a thought cycle.
+    Dynamic Scheduler:
+    Checks for inactivity and triggers thoughts based on probability and eligibility.
+    Run every 20 minutes.
     """
-    last_active = global_state.get_last_interaction()
-    delta_seconds = (datetime.now() - last_active).total_seconds()
+    print(f"[Scheduler] Running periodic check...")
     
-    print(f"[Scheduler] Checking inactivity... Delta: {delta_seconds}s")
-    
-    if delta_seconds > 7200: # 120 minutes (Global inactivity for now)
-        print("[Scheduler] Inactivity detected. Triggering thought cycle for ORION_CORE.")
-        # We need a db session here. 
-        # Since this is a job, we create a new session
-        db = next(get_db())
-        try:
-            # Unified Agent Cycle - NO LOOP over users needed for internal thought
-            thought_service.generate_thought_cycle(db, user_id=None)
-        except Exception as e:
-            print(f"[Scheduler] Error in thought cycle: {e}")
-        finally:
-            db.close()
+    # Create DB Session
+    db = next(get_db())
+    try:
+        # 1. Eligibility Check (Quota & Safety)
+        if not thought_service.is_eligible_for_thought(db):
+            print("[Scheduler] Thought eligibility check FAILED (Quota exceeded). Aborting.")
+            return
+
+        # 2. Inactivity Check
+        last_active = global_state.get_last_interaction()
+        delta_seconds = (datetime.now() - last_active).total_seconds()
+        delta_minutes = delta_seconds / 60
+        
+        print(f"[Scheduler] Inactivity: {delta_minutes:.1f} minutes")
+        
+        # 3. Check for Pending Items (High Priority)
+        # Using a direct query or helper
+        pending_count = crud.get_pending_reflections(db) # Returns list, so len()
+        # Wait, crud.get_pending_reflections returns a list of objects based on previous file view
+        is_pending = len(pending_count) > 0 if isinstance(pending_count, list) else False
+        
+        # 4. Probability Logic
+        probability = 0.0
+        force = False
+        
+        if is_pending:
+            probability = 1.0
+            force = True
+            print("[Scheduler] Pending items detected. Priority: MAX.")
+        elif delta_minutes < 30:
+            probability = 0.05 # 5% chance if very active
+        elif 30 <= delta_minutes < 120:
+            probability = 0.30 # 30% chance
+        else:
+             # > 120 minutes
+             probability = 1.0
+             
+        # 5. Dice Roll
+        roll = random.random()
+        print(f"[Scheduler] Probability: {probability*100}% | Roll: {roll:.2f}")
+        
+        if roll < probability or force:
+            print("[Scheduler] Triggering Thought Cycle!")
+            thought_service.generate_thought_cycle(db, user_id=None, force=force)
+        else:
+            print("[Scheduler] Skipped based on dice roll.")
+
+    except Exception as e:
+        print(f"[Scheduler] Error in thought cycle: {e}")
+    finally:
+        db.close()
 
 @app.on_event("startup")
 def startup_event():
     # Initialize scheduler
-    # Run every 30 minutes = 1800 seconds
-    scheduler.add_job(check_inactivity_and_think, 'interval', minutes=30)
+    # Run every 20 minutes = 1200 seconds
+    scheduler.add_job(check_inactivity_and_think, 'interval', minutes=20)
     scheduler.start()
-    print("[System] APScheduler started.")
+    print("[System] APScheduler started (Interval: 20m).")
 
 # --- AUTH ---
 
