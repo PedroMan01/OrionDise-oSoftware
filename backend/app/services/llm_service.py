@@ -1,7 +1,9 @@
 import requests
 import json
 import re
+import re
 import os
+import time # Added for raw logger timestamp
 from dotenv import load_dotenv
 
 from pathlib import Path
@@ -377,33 +379,45 @@ class OrionLLM:
                 else:
                     content_str = message["content"]
                 
+                # --- RAW LOGGER (BLACK BOX) ---
+                # Save raw response before parsing to catch "dirty" JSON
+                try:
+                    log_dir = "backend/debug_logs"
+                    os.makedirs(log_dir, exist_ok=True)
+                    timestamp = int(time.time())
+                    with open(f"{log_dir}/raw_thought_{timestamp}.txt", "w", encoding="utf-8") as f:
+                        f.write(content_str)
+                    print(f"[RawLogger] Saved raw response to {log_dir}/raw_thought_{timestamp}.txt")
+                except Exception as log_e:
+                    print(f"[RawLogger] Failed to save raw log: {log_e}")
+                # ------------------------------
+
                 # Try to parse JSON
                 try:
                     if not content_str: 
                         return {"response": "...", "instructions": "Silence."}
 
-                    # Robust Cleaning with Regex to extract JSON object
-                    # Find the first '{' and the last '}'
+                    # Robust Strict Cleaning
+                    # 1. Remove markdown code blocks if present (patterns like ```json ... ```)
+                    content_str = re.sub(r'```[a-zA-Z]*\n', '', content_str, flags=re.MULTILINE)
+                    content_str = re.sub(r'```', '', content_str, flags=re.MULTILINE)
+                    
+                    # 2. Find first '{' and last '}'
+                    start_idx = content_str.find('{')
+                    end_idx = content_str.rfind('}')
+                    
+                    if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                        clean_text = content_str[start_idx : end_idx + 1]
+                    else:
+                        # Fallback: try using the original string stripped
+                        clean_text = content_str.strip()
+                        
                     try:
-                        match = re.search(r'(\{.*\})', content_str, re.DOTALL)
-                        if match:
-                            clean_text = match.group(1)
-                        else:
-                            clean_text = content_str.strip()
-                            
                         content_json = json.loads(clean_text, strict=False)
                         return content_json
                     except json.JSONDecodeError as e:
-                        # Attempt one more cleanup for common markdown issues
-                         clean_text = re.sub(r'^```json\s*', '', content_str, flags=re.MULTILINE)
-                         clean_text = re.sub(r'^```\s*', '', clean_text, flags=re.MULTILINE)
-                         clean_text = re.sub(r'```\s*$', '', clean_text, flags=re.MULTILINE)
-                         clean_text = clean_text.strip()
-                         
-                         try:
-                             return json.loads(clean_text, strict=False)
-                         except:
-                             raise e # Raise original error to be caught by outer block
+                         print(f"[ERROR] JSON Parsing Failed. Text: {clean_text[:50]}... Error: {e}")
+                         raise e # Raise explicit exception as requested
                 except json.JSONDecodeError as e:
                     print(f"[ERROR] LLM no retornó JSON válido. Raw: {content_str} | Error: {e}")
                     

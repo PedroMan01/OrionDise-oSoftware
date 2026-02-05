@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 import crud, schemas
 from app.services.llm_service import orion_llm
+import app.services.thought_service as thought_service
 from app.services.audio_service import audio_service
 from app.global_state import global_state
 from datetime import datetime, timedelta
@@ -211,3 +212,18 @@ async def chat_audio_interaction(
         "instructions": instructions,
         "transcription": transcribed_text
     }
+
+# --- DEBUG ENDPOINTS ---
+@router.post("/debug/force-think")
+def force_think(db: Session = Depends(get_db)):
+    """
+    Triggers an immediate thought cycle (Priority/Forced).
+    Useful for testing or manual intervention.
+    """
+    print("[Debug] Manual trigger: /debug/force-think")
+    
+    # We call generate_thought_cycle with force=True
+    # The user_id is None for global agent thoughts
+    thought_service.generate_thought_cycle(db, user_id=None, force=True)
+    
+    return {"status": "Ciclo de pensamiento forzado ejecutado."}

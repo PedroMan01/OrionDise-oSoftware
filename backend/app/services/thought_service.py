@@ -263,5 +263,24 @@ def generate_thought_cycle(db: Session, user_id: int = None, force: bool = False
             
     except Exception as e:
         logger.error(f"[ThoughtCycle] Critical Error: {e}")
+        
+        # PERSISTENCIA DE FALLO (CRÍTICO)
+        try:
+            # Crear reflexión de error para registro en DB
+            error_thought = models.Thought(
+                user_id=None,
+                agent_id=AGENT_ID,
+                topic="Error",
+                content=f"Fallo sistémico en ThoughtCycle: {str(e)} | Action: WAIT",
+                mood="Critical",
+                vector=None, # No vector for errors
+                created_at=datetime.utcnow()
+            )
+            db.add(error_thought)
+            db.commit()
+            logger.info("[ThoughtCycle] Error persistido en DB correctamente.")
+        except Exception as db_e:
+            logger.error(f"[ThoughtCycle] Error al persistir el fallo en DB: {db_e}")
+            db.rollback()
     finally:
         IS_THINKING = False
